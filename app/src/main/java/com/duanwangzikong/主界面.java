@@ -57,16 +57,24 @@ public class 主界面 extends Activity {
 
     private void 构建网页界面() {
         网页视图 = new WebView(this);
+        网页视图.setHorizontalScrollBarEnabled(false);
+        网页视图.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
         WebSettings 设置 = 网页视图.getSettings();
         设置.setJavaScriptEnabled(true);
         设置.setDomStorageEnabled(true);
         设置.setAllowFileAccess(true);
         设置.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        设置.setUseWideViewPort(false);
+        设置.setLoadWithOverviewMode(false);
+        设置.setTextZoom(100);
+        设置.setUserAgentString("Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120 Mobile Safari/537.36 断网自控");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             设置.setAllowFileAccessFromFileURLs(true);
             设置.setAllowUniversalAccessFromFileURLs(true);
         }
         网页视图.addJavascriptInterface(new 前端桥(), "AndroidBridge");
+        网页视图.clearCache(true);
+        网页视图.clearHistory();
         网页视图.loadUrl("file:///android_asset/www/index.html");
         setContentView(网页视图);
     }
@@ -383,9 +391,10 @@ public class 主界面 extends Activity {
         String 名称 = String.valueOf(包管理器.getApplicationLabel(信息));
         应用条目 已有 = 应用映射.get(包名);
         if (已有 == null) {
-            应用映射.put(包名, new 应用条目(名称, 包名, 系统应用, 可启动, 编码图标(包管理器.getApplicationIcon(信息), 48)));
+            String 图标 = 可启动 ? 编码图标(包管理器.getApplicationIcon(信息), 36) : "";
+            应用映射.put(包名, new 应用条目(名称, 包名, 系统应用, 可启动, 图标));
         } else if (可启动 && !已有.可启动) {
-            应用映射.put(包名, new 应用条目(已有.名称, 已有.包名, 已有.系统应用, true, 已有.图标));
+            应用映射.put(包名, new 应用条目(已有.名称, 已有.包名, 已有.系统应用, true, 编码图标(包管理器.getApplicationIcon(信息), 36)));
         }
     }
 
