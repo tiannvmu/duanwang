@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>断网自控</title>
+  <style>
+    :root {
+      --bg: #eef4ff;
+      --card: rgba(255,255,255,.86);
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: rgba(148,163,184,.28);
+      --primary: #2563eb;
+      --primary2: #7c3aed;
+      --danger: #ef4444;
+      --success: #10b981;
+      --shadow: 0 18px 45px rgba(30, 64, 175, .14);
+      --radius: 26px;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(96,165,250,.45), transparent 35%),
+        radial-gradient(circle at 85% 8%, rgba(167,139,250,.35), transparent 30%),
+        linear-gradient(180deg, #eff6ff 0%, #f8fafc 42%, #ffffff 100%);
+      min-height: 100vh;
+    }
+    .page { padding: 18px 16px 104px; }
+    .hero {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 14px 0 12px;
+      backdrop-filter: blur(18px);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-mark {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: grid; place-items: center;
+      color: var(--primary); font-size: 25px; font-weight: 800;
+      background: transparent;
+      box-shadow: none;
+      overflow: hidden;
+    }
+    .logo-mark img { width: 100%; height: 100%; object-fit: contain; }
+    h1 { margin: 0; font-size: 28px; letter-spacing: -.8px; line-height: 1.05; }
+    .sub { margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .pill {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.72);
+      color: #334155;
+      padding: 8px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+    }
+    .status {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .status-title { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+    .status-main { font-size: 22px; font-weight: 800; letter-spacing: -.4px; }
+    .stat-badge {
+      min-width: 76px;
+      text-align: center;
+      padding: 10px 12px;
+      border-radius: 18px;
+      background: #eff6ff;
+      color: var(--primary);
+      font-weight: 800;
+    }
+    .mode-card { padding: 12px; margin-bottom: 14px; }
+    .seg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: rgba(226,232,240,.7);
+      padding: 6px;
+      border-radius: 22px;
+    }
+    .seg button {
+      border: 0;
+      border-radius: 17px;
+      padding: 12px 8px;
+      background: transparent;
+      color: #475569;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .seg button.active {
+      background: linear-gradient(135deg, #ffffff, #eff6ff);
+      color: var(--primary);
+      box-shadow: 0 10px 24px rgba(37,99,235,.15);
+    }
+    .hint { color: var(--muted); font-size: 12px; line-height: 1.5; padding: 10px 4px 0; }
+    .advanced {
+      margin: 14px 2px 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+      text-align: center;
+    }
+    .advanced button {
+      border: 0;
+      background: transparent;
+      color: var(--primary);
+      font-size: 12px;
+      text-decoration: underline;
+      padding: 2px 4px;
+    }
+    .toolbar { padding: 14px; margin-bottom: 14px; }
+    .search {
+      display: flex; align-items: center; gap: 10px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 0 14px;
+      height: 52px;
+      box-shadow: 0 10px 28px rgba(15,23,42,.06);
+    }
+    .search input {
+      flex: 1; border: 0; outline: 0; background: transparent;
+      font-size: 15px; color: var(--text);
+    }
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px 0 2px;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.75);
+      color: #334155;
+      border-radius: 999px;
+      padding: 10px 8px;
+      font-weight: 700;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+    .chip.wide { grid-column: span 2; }
+    .chip.active { color: white; border-color: transparent; background: linear-gradient(135deg, var(--primary), var(--primary2)); }
+    .list { display: flex; flex-direction: column; gap: 10px; }
+    .app {
+      display: grid;
+      grid-template-columns: 46px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 24px rgba(15,23,42,.055);
+    }
+    .avatar {
+      width: 46px; height: 46px; border-radius: 12px;
+      display: grid; place-items: center;
+      color: var(--primary);
+      font-weight: 900;
+      background: transparent;
+      overflow: hidden;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: contain; }
+    .name { font-size: 15px; font-weight: 850; line-height: 1.15; margin-bottom: 5px; }
+    .pkg { font-size: 11px; color: var(--muted); word-break: break-all; }
+    .tag { display: inline-block; margin-top: 6px; font-size: 10px; color: #64748b; background: #f1f5f9; padding: 3px 7px; border-radius: 999px; }
+    .toggle {
+      width: 52px; height: 32px; border-radius: 999px;
+      background: #cbd5e1;
+      position: relative;
+      transition: .2s ease;
+    }
+    .toggle::after {
+      content: "";
+      position: absolute;
+      width: 26px; height: 26px; border-radius: 50%;
+      background: white;
+      left: 3px; top: 3px;
+      box-shadow: 0 3px 10px rgba(15,23,42,.25);
+      transition: .2s ease;
+    }
+    .app.selected { border-color: rgba(37,99,235,.35); background: linear-gradient(135deg, rgba(239,246,255,.98), rgba(255,255,255,.96)); }
+    .app.selected .toggle { background: linear-gradient(135deg, var(--primary), var(--primary2)); }
+    .app.selected .toggle::after { transform: translateX(20px); }
+    .empty { text-align: center; color: var(--muted); padding: 34px 10px; }
+    .bottom {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.96) 26%, #fff 100%);
+      backdrop-filter: blur(18px);
+      z-index: 20;
+    }
+    .primary {
+      width: 100%;
+      border: 0;
+      height: 58px;
+      border-radius: 22px;
+      font-size: 17px;
+      font-weight: 950;
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      box-shadow: 0 16px 32px rgba(37,99,235,.28);
+    }
+    .primary.running { background: linear-gradient(135deg, #ef4444, #f97316); box-shadow: 0 16px 32px rgba(239,68,68,.24); }
+
+    /* ===== 门禁引导页 ===== */
+    .gate {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      padding: 0 18px;
+      overflow-y: auto;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(96,165,250,.45), transparent 35%),
+        radial-gradient(circle at 85% 8%, rgba(167,139,250,.35), transparent 30%),
+        linear-gradient(180deg, #eff6ff 0%, #f8fafc 42%, #ffffff 100%);
+    }
+    .gate.hidden { display: none; }
+    .gate-inner { padding: 56px 4px 36px; max-width: 520px; margin: 0 auto; }
+    .gate h2 { margin: 0 0 6px; font-size: 26px; letter-spacing: -.6px; }
+    .gate .desc { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 22px; }
+    .gate-item {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 16px;
+      margin-bottom: 14px;
+      border-radius: 22px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .gate-icon {
+      width: 44px; height: 44px; border-radius: 14px;
+      display: grid; place-items: center;
+      font-size: 22px;
+      background: #eff6ff;
+    }
+    .gate-item.done .gate-icon { background: rgba(16,185,129,.14); }
+    .gate-item.todo .gate-icon { background: rgba(239,68,68,.12); }
+    .gate-name { font-size: 16px; font-weight: 800; margin-bottom: 3px; }
+    .gate-sub { font-size: 12px; color: var(--muted); line-height: 1.45; }
+    .gate-btn {
+      border: 0;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      white-space: nowrap;
+    }
+    .gate-item.done .gate-btn {
+      background: rgba(16,185,129,.16);
+      color: var(--success);
+    }
+    .gate-enter {
+      width: 100%;
+      border: 0;
+      height: 56px;
+      border-radius: 20px;
+      font-size: 17px;
+      font-weight: 950;
+      color: white;
+      margin-top: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      box-shadow: 0 16px 32px rgba(37,99,235,.28);
+    }
+    .gate-enter:disabled {
+      background: #cbd5e1;
+      box-shadow: none;
+      color: #f8fafc;
+    }
+    .gate-tip { text-align: center; color: var(--muted); font-size: 12px; margin-top: 12px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div id="gate" class="gate hidden">
+    <div class="gate-inner">
+      <h2>开启前的必要授权</h2>
+      <div class="desc">为了保证“断网自控”不被系统杀死、能真正帮你管住自己，需要先完成下面 3 项授权。<b>全部完成后才能进入。</b></div>
+
+      <div class="gate-item todo" id="gateNoti">
+        <div class="gate-icon">🔔</div>
+        <div>
+          <div class="gate-name">通知权限</div>
+          <div class="gate-sub">用于显示常驻通知，保持后台存活</div>
+        </div>
+        <button class="gate-btn" onclick="bridge().requestNotification()">去授权</button>
+      </div>
+
+      <div class="gate-item todo" id="gateBatt">
+        <div class="gate-icon">🔋</div>
+        <div>
+          <div class="gate-name">忽略电池优化</div>
+          <div class="gate-sub">防止系统省电策略把保护偷偷杀掉</div>
+        </div>
+        <button class="gate-btn" onclick="bridge().requestBattery()">去授权</button>
+      </div>
+
+      <div class="gate-item todo" id="gateVpn">
+        <div class="gate-icon">🛡️</div>
+        <div>
+          <div class="gate-name">VPN 授权</div>
+          <div class="gate-sub">本地 VPN 是断网功能的核心，必须授权</div>
+        </div>
+        <button class="gate-btn" onclick="bridge().requestVpn()">去授权</button>
+      </div>
+
+      <div class="gate-item todo" id="gateApps">
+        <div class="gate-icon">📋</div>
+        <div>
+          <div class="gate-name">读取应用列表</div>
+          <div class="gate-sub">一般装好就已通过。若显示未通过，点“去检查”进入应用详情，再到「权限」里允许“读取应用列表/获取应用列表”</div>
+        </div>
+        <button class="gate-btn" onclick="bridge().openAppDetails()">去检查</button>
+      </div>
+
+      <button class="gate-enter" id="gateEnter" disabled onclick="进入主界面()">请先完成全部授权</button>
+      <div class="gate-tip">提示：如果点了拒绝，再点一次“去授权”即可；完成后会自动变绿。</div>
+    </div>
+  </div>
+
+  <main class="page">
+    <section class="hero">
+      <div class="brand">
+        <div class="logo">
+          <div class="logo-mark" id="appLogo">断</div>
+          <div>
+            <h1>断网自控</h1>
+            <div class="sub">无脑选择应用，一键进入专注</div>
+          </div>
+        </div>
+        <div id="runningPill" class="pill">加载中</div>
+      </div>
+      <div class="panel status">
+        <div>
+          <div class="status-title">当前规则</div>
+          <div id="statusMain" class="status-main">准备就绪</div>
+        </div>
+        <div id="selectedBadge" class="stat-badge">0 个</div>
+      </div>
+    </section>
+
+    <section class="panel mode-card">
+      <div class="seg">
+        <button id="whiteBtn" onclick="setMode('白名单')">白名单</button>
+        <button id="blackBtn" onclick="setMode('黑名单')">黑名单</button>
+      </div>
+      <div id="modeHint" class="hint"></div>
+    </section>
+
+    <section class="panel toolbar">
+      <label class="search">🔎 <input id="search" placeholder="搜索微信、浏览器、包名..." oninput="render()" /></label>
+      <div class="chips">
+        <button class="chip wide active" id="allChip" onclick="setFilter('all')">全部应用</button>
+        <button class="chip" id="userChip" onclick="setFilter('user')">用户应用</button>
+        <button class="chip" id="sysChip" onclick="setFilter('system')">系统应用</button>
+        <button class="chip" onclick="selectVisible(true)">全选当前</button>
+        <button class="chip" onclick="selectVisible(false)">清空当前</button>
+      </div>
+    </section>
+
+    <section id="list" class="list"></section>
+    <section class="advanced">
+      可选增强：<button onclick="bridge().openAutoStart()">设置应用自启动（部分手机需要，进一步防杀后台）</button>
+    </section>
+  </main>
+
+  <footer class="bottom">
+    <button id="mainAction" class="primary" onclick="toggleProtect()">开启保护</button>
+  </footer>
+
+  <script>
+    let apps = [];
+    let selected = new Set();
+    let mode = '白名单';
+    let running = false;
+    let filter = 'all';
+    let 已加载主界面 = false;
+    let 已放行 = false;
+
+    function safeParse(value, fallback) { try { return JSON.parse(value); } catch(e) { return fallback; } }
+    function bridge() { return window.AndroidBridge; }
+
+    // 入口：先验门禁
+    function init() {
+      window.刷新门禁();
+    }
+
+    // 门禁状态刷新（Java 端在权限/设置变化后会调用 window.刷新门禁）
+    window.刷新门禁 = function() {
+      const 状态 = safeParse(bridge().getGateStatus(), {});
+      const 通知 = !!状态['通知'];
+      const 电池 = !!状态['电池'];
+      const vpn = !!状态['VPN'];
+      const 应用列表 = !!状态['应用列表'];
+      const 全通过 = !!状态['全部通过'];
+
+      设置门禁项('gateNoti', 通知);
+      设置门禁项('gateBatt', 电池);
+      设置门禁项('gateVpn', vpn);
+      设置门禁项('gateApps', 应用列表);
+
+      const 进入按钮 = document.getElementById('gateEnter');
+      进入按钮.disabled = !全通过;
+      进入按钮.textContent = 全通过 ? '✅ 全部完成，进入断网自控' : '请先完成全部授权';
+
+      if (全通过 && 已放行) {
+        显示主界面();
+      } else if (!全通过) {
+        显示门禁();
+      }
+    };
+
+    function 设置门禁项(id, 完成) {
+      const 元素 = document.getElementById(id);
+      if (!元素) return;
+      元素.classList.toggle('done', 完成);
+      元素.classList.toggle('todo', !完成);
+      const 按钮 = 元素.querySelector('.gate-btn');
+      if (按钮) 按钮.textContent = 完成 ? '已完成' : '去授权';
+    }
+
+    function 显示门禁() {
+      document.getElementById('gate').classList.remove('hidden');
+    }
+
+    function 进入主界面() {
+      const 状态 = safeParse(bridge().getGateStatus(), {});
+      if (!状态['全部通过']) { window.刷新门禁(); return; }
+      已放行 = true;
+      显示主界面();
+    }
+
+    function 显示主界面() {
+      document.getElementById('gate').classList.add('hidden');
+      if (!已加载主界面) {
+        加载主界面数据();
+        已加载主界面 = true;
+      }
+      render();
+    }
+
+    function 加载主界面数据() {
+      const config = safeParse(bridge().getConfig(), {});
+      apps = safeParse(bridge().getApps(), []);
+      mode = config['模式'] || '白名单';
+      running = !!config['正在运行'];
+      selected = new Set(config['选中包名'] || []);
+      const logo = document.getElementById('appLogo');
+      if (config['本应用图标']) logo.innerHTML = `<img src="${config['本应用图标']}" alt="断网自控图标">`;
+    }
+
+    function save() { bridge().saveConfig(mode, JSON.stringify(Array.from(selected))); }
+    function setMode(next) { mode = next; save(); render(); }
+    function setFilter(next) { filter = next; render(); }
+
+    function filteredApps() {
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      return apps.filter(app => {
+        if (filter === 'user' && app['系统应用']) return false;
+        if (filter === 'system' && !app['系统应用']) return false;
+        if (!q) return true;
+        return String(app['名称']).toLowerCase().includes(q) || String(app['包名']).toLowerCase().includes(q);
+      });
+    }
+
+    function toggle(pkg) {
+      selected.has(pkg) ? selected.delete(pkg) : selected.add(pkg);
+      save();
+      render();
+    }
+
+    function selectVisible(yes) {
+      filteredApps().forEach(app => yes ? selected.add(app['包名']) : selected.delete(app['包名']));
+      save();
+      render();
+    }
+
+    function toggleProtect() { save(); bridge().toggleProtection(); running = !running; render(); }
+    window.refreshFromAndroid = function() {
+      const config = safeParse(bridge().getConfig(), {});
+      running = !!config['正在运行'];
+      render();
+    };
+
+    function render() {
+      document.getElementById('whiteBtn').classList.toggle('active', mode === '白名单');
+      document.getElementById('blackBtn').classList.toggle('active', mode === '黑名单');
+      document.getElementById('allChip').classList.toggle('active', filter === 'all');
+      document.getElementById('userChip').classList.toggle('active', filter === 'user');
+      document.getElementById('sysChip').classList.toggle('active', filter === 'system');
+      document.getElementById('runningPill').textContent = running ? '🟢 保护中' : '⚪ 未开启';
+      const mainAction = document.getElementById('mainAction');
+      mainAction.textContent = running ? '停止保护' : '开启保护';
+      mainAction.classList.toggle('running', running);
+      document.getElementById('selectedBadge').textContent = selected.size + ' 个';
+      document.getElementById('statusMain').textContent = mode === '白名单' ? '只允许选中应用联网' : '只禁止选中应用联网';
+      document.getElementById('modeHint').textContent = mode === '白名单'
+        ? '适合强自控：只勾选微信、浏览器、学习软件等必要应用。'
+        : '适合轻自控：勾选短视频、游戏、娱乐软件等要断网的应用。';
+
+      const list = document.getElementById('list');
+      const data = filteredApps();
+      if (!data.length) { list.innerHTML = '<div class="panel empty">没有找到应用，换个关键词试试</div>'; return; }
+      list.innerHTML = data.map(app => {
+        const pkg = app['包名'];
+        const name = app['名称'] || pkg;
+        const first = name.trim().slice(0, 1) || 'A';
+        const icon = app['图标'] ? `<img src="${app['图标']}" alt="${escapeHtml(name)}图标">` : escapeHtml(first);
+        const checked = selected.has(pkg);
+        return `<article class="app ${checked ? 'selected' : ''}" data-pkg="${escapeHtml(pkg)}" onclick="toggle(this.dataset.pkg)">
+          <div class="avatar">${icon}</div>
+          <div>
+            <div class="name">${escapeHtml(name)}</div>
+            <div class="pkg">${escapeHtml(pkg)}</div>
+            ${app['系统应用'] ? '<span class="tag">系统应用</span>' : '<span class="tag">用户应用</span>'} ${app['可启动'] ? '<span class="tag">可打开</span>' : '<span class="tag">后台包</span>'}
+          </div>
+          <div class="toggle"></div>
+        </article>`;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'"'}[ch]));
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
